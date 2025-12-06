@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>لوحة التحكم - البطاقات</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="bootstrap.css" />
+  <link rel="stylesheet" href="animate.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <!-- نافذة تغيير كلمة المرور -->
+  <div id="changePassModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>🔑 تغيير كلمة المرور</h2>
+      <form id="changePassForm">
+        <div class="form-group">
+          <label>كلمة المرور الحالية</label>
+          <input type="password" id="currentPass" required />
+        </div>
+        <div class="form-group">
+          <label>كلمة المرور الجديدة</label>
+          <input type="password" id="newPass" required minlength="4" />
+        </div>
+        <div class="form-group">
+          <label>تأكيد كلمة المرور الجديدة</label>
+          <input type="password" id="confirmPass" required />
+        </div>
+        <div id="passError" class="error-msg hidden"></div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+          <button type="button" id="cancelChangePass" class="btn btn-ghost">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <header class="admin-topbar animated fadeInDown">
+    <h1>لوحة التحكم</h1>
+    <nav class="admin-actions">
+      <button id="changePasswordBtn" class="btn btn-subtle">🔑 تغيير كلمة المرور</button>
+      <button id="logoutBtn" class="btn btn-danger">🚪 تسجيل الخروج</button>
+      <a href="index.html" class="btn btn-outline">⬅️ العودة للتطبيق</a>
+    </nav>
+  </header>
+
+  <main class="admin-main">
+    <section style="padding:12px 0;border-bottom:1px solid #E5E7EB">
+      <h2>إعدادات عامة</h2>
+      <div class="list-actions">
+        <div class="btn-group" id="soundGroup" role="group" aria-label="إعدادات الصوت">
+          <button id="soundOn" class="btn btn-subtle" aria-pressed="false">🔊 صوت: تشغيل</button>
+          <button id="soundOff" class="btn btn-subtle" aria-pressed="true">🔇 صوت: إيقاف</button>
+        </div>
+        <button id="resetStatsBtn" class="btn btn-danger">🗑️ مسح الإحصائيات</button>
+      </div>
+    </section>
+
+    <div class="admin-grid">
+      <section>
+        <h2>إضافة/تعديل عنصر</h2>
+        <form id="adminForm" class="form">
+          <label>المعرّف (ID)
+            <input type="text" id="f_id" placeholder="مثل: spoon" required />
+          </label>
+          <label>الاسم (English)
+            <input type="text" id="f_en" placeholder="Spoon" required />
+          </label>
+          <label>الاسم (العربية)
+            <input type="text" id="f_ar" placeholder="ملعقة" required />
+          </label>
+          <label>رابط الصورة (URL)
+            <input type="url" id="f_img" placeholder="https://... أو اتركه فارغًا عند استخدام ملف" />
+          </label>
+          <label>رفع صورة (ملف)
+            <input type="file" id="f_file" accept="image/*" />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <button type="button" id="clearForm" class="btn btn-ghost">تفريغ</button>
+          </div>
+          <div id="formMsg" class="msg"></div>
+        </form>
+        <div class="preview">
+          <h3>معاينة</h3>
+          <img id="adminPreview" class="figure" src="assets/spoon.png" alt="preview" />
+        </div>
+      </section>
+
+      <section>
+        <h2>العناصر الحالية</h2>
+        <div class="list-actions">
+          <button id="exportJson" class="btn btn-success">📥 تصدير JSON</button>
+          <label class="import-label btn btn-outline" style="cursor:pointer">
+            📤 استيراد JSON
+            <input type="file" id="importJson" accept="application/json" />
+          </label>
+          <button id="resetDefaults" class="btn btn-danger">🔄 الرجوع للوضع الافتراضي</button>
+        </div>
+        <ul id="itemsList" class="items-list"></ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="admin-footer">
+    <small>يتم حفظ العناصر على جهازك باستخدام LocalStorage.</small>
+    <div id="adminStats" style="margin-top:8px;"></div>
+  </footer>
+
+  <script>
+    const DEFAULT_ITEMS = [
+      {"id": "waiter", "en": "Waiter", "ar": "النادل"},
+      {"id": "strawberries", "en": "Strawberries", "ar": "فراولة"},
+      {"id": "biscuits", "en": "Biscuits", "ar": "بسكويت"},
+      {"id": "spoon", "en": "Spoon", "ar": "ملعقة"},
+      {"id": "napkin", "en": "Napkin", "ar": "منديل"},
+      {"id": "fork", "en": "Fork", "ar": "شوكة"},
+      {"id": "knife", "en": "Knife", "ar": "سكين"},
+      {"id": "pepper", "en": "Pepper", "ar": "فلفل"},
+      {"id": "salt", "en": "Salt", "ar": "ملح"},
+      {"id": "chopsticks", "en": "Chopsticks", "ar": "عيدان أكل"}
+    ];
+  </script>
+  <script src="admin.js"></script>
+</body>
+</html>
