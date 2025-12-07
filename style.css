@@ -80,3 +80,81 @@ body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text)}
 .help-section h3{margin-bottom:8px;color:var(--primary)}
 .help-item{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb}
 .help-item:last-child{border-bottom:none}
+
+/* تنسيقات نظام الحفظ */
+.storage-status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #ffffff;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 10px 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.backup-item {
+    transition: all 0.3s ease;
+}
+
+.backup-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.backup-stats h3 {
+    margin-top: 0;
+    color: #374151;
+    font-size: 1.1rem;
+}
+
+/* تنسيق أزرار الحفظ في شريط الأدوات */
+.cards-toolbar .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* تنسيق رسائل الحالة */
+.save-message {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: #10B981;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* زر النسخ الاحتياطية العائم */
+#openBackupBtn {
+    z-index: 99;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#openBackupBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
