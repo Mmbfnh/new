@@ -496,3 +496,54 @@ document.addEventListener('DOMContentLoaded', function() {
         setupLogout();
     }
 });
+// === نظام الحفظ في لوحة التحكم ===
+function setupStorageInAdmin() {
+    // زر إدارة النسخ الاحتياطية
+    const storageBtn = document.createElement('button');
+    storageBtn.id = 'adminStorageBtn';
+    storageBtn.className = 'btn btn-outline';
+    storageBtn.innerHTML = '📦 إدارة النسخ';
+    storageBtn.onclick = openBackupModal;
+    
+    // إضافة الزر إلى شريط الأدوات
+    const actionsDiv = document.querySelector('.admin-actions');
+    if (actionsDiv) {
+        actionsDiv.insertBefore(storageBtn, actionsDiv.firstChild);
+    }
+    
+    // تحديث عرض النسخ الاحتياطية في لوحة التحكم
+    updateAdminBackupInfo();
+}
+
+function updateAdminBackupInfo() {
+    const stats = CardStorage.getStorageStats();
+    const adminStats = document.getElementById('adminStats');
+    if (adminStats) {
+        adminStats.innerHTML += `
+            <div style="margin-top: 10px; font-size: 0.9rem; color: #6B7280;">
+                <div>💾 النسخ الاحتياطية: ${stats.backupsCount}</div>
+                <div>📊 حجم التخزين: ${stats.totalSize}</div>
+                <div>🕐 آخر تعديل: ${stats.lastModified}</div>
+            </div>
+        `;
+    }
+}
+
+// حفظ تلقائي عند التعديل في لوحة التحكم
+function autoSaveAdmin() {
+    CardStorage.saveCards(ITEMS);
+    updateAdminBackupInfo();
+}
+
+// استدعاء الإعدادات
+if (window.location.pathname.includes('admin.html')) {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(setupStorageInAdmin, 1000);
+        
+        // حفظ تلقائي عند أي تغيير
+        const form = document.getElementById('adminForm');
+        if (form) {
+            form.addEventListener('submit', () => setTimeout(autoSaveAdmin, 100));
+        }
+    });
+}
