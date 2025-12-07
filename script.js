@@ -1,3 +1,204 @@
+// === نظام حفظ البطاقات ===
+let ITEMS = CardStorage.loadCards() || DEFAULTS.slice();
+
+// حفظ البطاقات تلقائياً
+function autoSaveCards() {
+    const success = CardStorage.saveCards(ITEMS);
+    if (success) {
+        localStorage.setItem('cards_last_modified', new Date().toLocaleString('ar-SA'));
+        updateStorageStatus('تم الحفظ تلقائياً', 'success');
+    }
+}
+
+// تحديث الحالة في التذييل
+function updateStorageStatus(message, type = 'info') {
+    const statusElement = document.getElementById('storageStatus');
+    if (!statusElement) return;
+
+    statusElement.innerHTML = `💾 ${message}`;
+    statusElement.style.color = type === 'success' ? '#10B981' : 
+                               type === 'error' ? '#EF4444' : '#6B7280';
+    
+    setTimeout(() => {
+        const stats = CardStorage.getStorageStats();
+        statusElement.innerHTML = `💾 ${stats.cardsCount} بطاقة • ${stats.totalSize}`;
+        statusElement.style.color = '#6B7280';
+    }, 2000);
+}
+
+// تصدير البطاقات
+function exportCards() {
+    const filename = `بطاقات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.json`;
+    CardStorage.exportCards(ITEMS, filename);
+    updateStorageStatus('تم التصدير بنجاح', 'success');
+    playSound('success');
+}
+
+// استيراد البطاقات
+function importCards(file) {
+    CardStorage.importCards(file, (importedCards, error) => {
+        if (error) {
+            showToast(`خطأ في الاستيراد: ${error}`, 'error');
+            playSound('error');
+            return;
+        }
+
+        // دمج البطاقات المستوردة مع الحالية
+        const existingIds = ITEMS.map(card => card.id);
+        const newCards = importedCards.filter(card => !existingIds.includes(card.id));
+        const updatedCards = importedCards.filter(card => existingIds.includes(card.id));
+
+        ITEMS = [...ITEMS.filter(card => !existingIds.includes(card.id)), ...importedCards];
+        
+        // إنشاء نسخة احتياطية قبل التغيير
+        CardStorage.createBackup(ITEMS, `قبل الاستيراد ${new Date().toLocaleTimeString('ar-SA')}`);
+        
+        // حفظ التغييرات
+        autoSaveCards();
+        
+        // إعادة التصيير
+        currentOrder = [...ITEMS];
+        render();
+        
+        // عرض النتائج
+        let message = `تم استيراد ${importedCards.length} بطاقة`;
+        if (newCards.length > 0) message += ` (${newCards.length} جديدة)`;
+        if (updatedCards.length > 0) message += ` (${updatedCards.length} محدثة)`;
+        
+        showToast(message, 'success');
+        updateStorageStatus(message, 'success');
+        playSound('success');
+    });
+}
+
+// حفظ يدوي
+function manualSave() {
+    const success = CardStorage.saveCards(ITEMS);
+    if (success) {
+        showToast('تم حفظ البطاقات بنجاح', 'success');
+        updateStorageStatus('تم الحفظ', 'success');
+        playSound('success');
+    } else {
+        showToast('فشل في حفظ البطاقات', 'error');
+        playSound('error');
+    }
+}
+
+// إضافة أزرار الحفظ إلى الواجهة
+function addStorageControls() {
+    const toolbar = document.querySelector('.cards-toolbar');
+    if (!toolbar) return;
+
+    // زر الحفظ
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-outline';
+    saveBtn.innerHTML = '💾 حفظ';
+    saveBtn.title = 'حفظ البطاقات';
+    saveBtn.onclick = manualSave;
+    
+    // زر التصدير
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-outline';
+    exportBtn.innerHTML = '📤 تصدير';
+    exportBtn.title = 'تصدير البطاقات كملف JSON';
+    exportBtn.onclick = exportCards;
+    
+    // زر الاستيراد
+    const importContainer = document.createElement('label');
+    importContainer.className = 'btn btn-outline';
+    importContainer.style.cursor = 'pointer';
+    importContainer.innerHTML = '📥 استيراد';
+    importContainer.title = 'استيراد بطاقات من ملف JSON';
+    
+    const importInput = document.createElement('input');
+    importInput.type = 'file';
+    importInput.accept = '.json,application/json';
+    importInput.style.display = 'none';
+    importInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (confirm('هل تريد استيراد البطاقات؟ سيتم دمجها مع البطاقات الحالية.')) {
+                importCards(file);
+            }
+        }
+        importInput.value = ''; // إعادة تعيين
+    };
+    
+    importContainer.appendChild(importInput);
+    importContainer.onclick = () => importInput.click();
+
+    // إضافة الأزرار
+    toolbar.appendChild(saveBtn);
+    toolbar.appendChild(exportBtn);
+    toolbar.appendChild(importContainer);
+
+    // إضافة حالة التخزين في التذييل
+    const footer = document.querySelector('.footer p');
+    if (footer) {
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'storageStatus';
+        statusDiv.style.marginTop = '10px';
+        statusDiv.style.fontSize = '0.9rem';
+        statusDiv.style.opacity = '0.8';
+        footer.parentNode.insertBefore(statusDiv, footer.nextSibling);
+        
+        // عرض الحالة الأولية
+        const stats = CardStorage.getStorageStats();
+        statusDiv.innerHTML = `💾 ${stats.cardsCount} بطاقة • ${stats.totalSize}`;
+    }
+}
+
+// تحديث الحالة عند التعديل
+function updateOnModification() {
+    autoSaveCards();
+    updateStats('cardsModified');
+}
+
+// الحفظ التلقائي عند إغلاق الصفحة
+window.addEventListener('beforeunload', function() {
+    autoSaveCards();
+});
+
+// الحفظ التلقائي كل دقيقة
+setInterval(autoSaveCards, 60000); // كل دقيقة
+
+// تحديث الوظائف الموجودة لتعمل مع نظام الحفظ
+function addCardToStorage(newCard) {
+    ITEMS.push(newCard);
+    autoSaveCards();
+    currentOrder = [...ITEMS];
+    render();
+    updateOnModification();
+    return true;
+}
+
+function updateCardInStorage(cardId, updatedCard) {
+    const index = ITEMS.findIndex(c => c.id === cardId);
+    if (index !== -1) {
+        ITEMS[index] = { ...ITEMS[index], ...updatedCard };
+        autoSaveCards();
+        currentOrder = [...ITEMS];
+        render();
+        updateOnModification();
+        return true;
+    }
+    return false;
+}
+
+function deleteCardFromStorage(cardId) {
+    const index = ITEMS.findIndex(c => c.id === cardId);
+    if (index !== -1) {
+        ITEMS.splice(index, 1);
+        autoSaveCards();
+        currentOrder = [...ITEMS];
+        render();
+        updateOnModification();
+        return true;
+    }
+    return false;
+}
+
+
 // === Animate.css helper ===
 function animateOnce(el, className, dur=800){ if(!el) return; el.classList.add('animated', className); setTimeout(()=>{ el.classList.remove('animated', className); }, dur); }
 
